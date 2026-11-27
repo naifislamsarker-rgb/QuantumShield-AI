@@ -1,0 +1,8 @@
+{
+  "name": "QuantumShield-AI",
+  "description": "AI-powered Post-Quantum Document Verification Platform protecting institutions from forgery with ML-DSA cryptography, AI forensics, and instant QR authentication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,320 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated QuantumShield AI operator profile with strict owner isolation.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["analyst", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "role", "createdAt"]
+    },
+    "AdminGrant": {
+      "title": "AdminGrant",
+      "description": "Server-verified administrator privilege marker.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "grantedAt"]
+    },
+    "InfrastructureScan": {
+      "title": "InfrastructureScan",
+      "description": "Live TLS, certificate, header, and AI-computed post-quantum readiness scan record.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetHost": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 253
+        },
+        "sector": {
+          "type": "string",
+          "enum": ["healthcare", "microfinance", "education", "government", "industry"]
+        },
+        "region": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "protocol": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "readinessScore": {
+          "type": "integer"
+        },
+        "riskIndex": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Quantum-Ready", "Transitioning", "Action Required"]
+        },
+        "remediationApplied": {
+          "type": "boolean"
+        },
+        "aiSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "recommendedSteps": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerUid",
+        "targetHost",
+        "sector",
+        "region",
+        "protocol",
+        "readinessScore",
+        "riskIndex",
+        "status",
+        "remediationApplied",
+        "aiSummary",
+        "recommendedSteps",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CopilotBrief": {
+      "title": "CopilotBrief",
+      "description": "Persisted Gemini AI Security Copilot query and remediation brief.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "answer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "readinessImpact": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "recommendedAction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "findingsCount": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerUid",
+        "query",
+        "answer",
+        "readinessImpact",
+        "recommendedAction",
+        "findingsCount",
+        "createdAt"
+      ]
+    },
+    "MitigationProfile": {
+      "title": "MitigationProfile",
+      "description": "Per-user persisted sector mitigation remediation toggles.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sectorId": {
+          "type": "string",
+          "enum": ["national", "healthcare", "microfinance", "education", "government", "industry"]
+        },
+        "appliedIndices": {
+          "type": "array"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerUid", "sectorId", "appliedIndices", "updatedAt"]
+    },
+    "AssessmentRequest": {
+      "title": "AssessmentRequest",
+      "description": "Persisted demo or quantum readiness assessment request with email dispatch status.",
+      "type": "object",
+      "properties": {
+        "referenceId": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "organization": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "sector": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["demo", "assessment"]
+        },
+        "selectedPlan": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "emailStatus": {
+          "type": "string",
+          "enum": ["sent", "not_configured", "failed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "referenceId",
+        "ownerUid",
+        "fullName",
+        "organization",
+        "email",
+        "sector",
+        "mode",
+        "selectedPlan",
+        "emailStatus",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private authenticated operator profiles; strictly isolated to owner or admin."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminGrant" },
+      "description": "Bootstrapped administrator registry keyed by Firebase UID."
+    },
+    "/scans/{scanId}": {
+      "schema": { "$ref": "#/entities/InfrastructureScan" },
+      "description": "Live infrastructure TLS/PQC scans and active remediation status owned by operator."
+    },
+    "/copilot_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/CopilotBrief" },
+      "description": "Saved Gemini AI Security Copilot consultation briefs owned by operator."
+    },
+    "/mitigation_profiles/{profileId}": {
+      "schema": { "$ref": "#/entities/MitigationProfile" },
+      "description": "Per-sector mitigation state persisted per authenticated operator."
+    },
+    "/assessment_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/AssessmentRequest" },
+      "description": "Authenticated operator assessment requests and email dispatch logs."
+    }
+  }
+}

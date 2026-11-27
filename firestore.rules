@@ -1,0 +1,240 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: default-deny all unspecified paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Pillar 3: Reusable Hardened Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isBootstrappedAdminEmail() {
+      return isVerifiedUser() && request.auth.token.email == 'naifislamsarkerr@gmail.com';
+    }
+
+    // --- Validation Blueprints (Pillar 2) ---
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'role', 'createdAt'])
+        && data.uid is string && data.uid == request.auth.uid && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.role is string && data.role in ['analyst', 'admin']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAdminGrant(data) {
+      return data.keys().hasAll(['uid', 'email', 'grantedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'grantedAt'])
+        && data.uid is string && data.uid == request.auth.uid && isValidId(data.uid)
+        && data.email is string && data.email == 'naifislamsarkerr@gmail.com'
+        && data.email.size() >= 3 && data.email.size() <= 160
+        && data.grantedAt is timestamp;
+    }
+
+    function isValidScan(data) {
+      return data.keys().hasAll([
+          'id', 'ownerUid', 'targetHost', 'sector', 'region', 'protocol',
+          'readinessScore', 'riskIndex', 'status', 'remediationApplied',
+          'aiSummary', 'recommendedSteps', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'targetHost', 'sector', 'region', 'protocol',
+          'readinessScore', 'riskIndex', 'status', 'remediationApplied',
+          'aiSummary', 'recommendedSteps', 'createdAt', 'updatedAt'
+        ])
+        && data.id is string && isValidId(data.id)
+        && data.ownerUid is string && data.ownerUid == request.auth.uid && isValidId(data.ownerUid)
+        && data.targetHost is string && data.targetHost.size() >= 3 && data.targetHost.size() <= 253
+        && data.sector is string && data.sector in ['healthcare', 'microfinance', 'education', 'government', 'industry']
+        && data.region is string && data.region.size() >= 2 && data.region.size() <= 80
+        && data.protocol is string && data.protocol.size() >= 2 && data.protocol.size() <= 140
+        && data.readinessScore is int && data.readinessScore >= 0 && data.readinessScore <= 100
+        && data.riskIndex is int && data.riskIndex >= 0 && data.riskIndex <= 100
+        && data.status is string && data.status in ['Quantum-Ready', 'Transitioning', 'Action Required']
+        && data.remediationApplied is bool
+        && data.aiSummary is string && data.aiSummary.size() >= 1 && data.aiSummary.size() <= 2000
+        && data.recommendedSteps is list && data.recommendedSteps.size() <= 10
+        && (data.recommendedSteps.size() == 0 || (data.recommendedSteps[0] is string && data.recommendedSteps[0].size() <= 400))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCopilotBrief(data) {
+      return data.keys().hasAll([
+          'id', 'ownerUid', 'query', 'answer', 'readinessImpact',
+          'recommendedAction', 'findingsCount', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'query', 'answer', 'readinessImpact',
+          'recommendedAction', 'findingsCount', 'createdAt'
+        ])
+        && data.id is string && isValidId(data.id)
+        && data.ownerUid is string && data.ownerUid == request.auth.uid && isValidId(data.ownerUid)
+        && data.query is string && data.query.size() >= 1 && data.query.size() <= 1000
+        && data.answer is string && data.answer.size() >= 1 && data.answer.size() <= 3000
+        && data.readinessImpact is string && data.readinessImpact.size() >= 1 && data.readinessImpact.size() <= 400
+        && data.recommendedAction is string && data.recommendedAction.size() >= 1 && data.recommendedAction.size() <= 1000
+        && data.findingsCount is int && data.findingsCount >= 0 && data.findingsCount <= 20
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMitigationProfile(data) {
+      return data.keys().hasAll(['ownerUid', 'sectorId', 'appliedIndices', 'updatedAt'])
+        && data.keys().hasOnly(['ownerUid', 'sectorId', 'appliedIndices', 'updatedAt'])
+        && data.ownerUid is string && data.ownerUid == request.auth.uid && isValidId(data.ownerUid)
+        && data.sectorId is string && data.sectorId in ['national', 'healthcare', 'microfinance', 'education', 'government', 'industry']
+        && data.appliedIndices is list && data.appliedIndices.size() <= 10
+        && (data.appliedIndices.size() == 0 || (data.appliedIndices[0] is int && data.appliedIndices[0] >= 0 && data.appliedIndices[0] <= 10))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAssessmentRequest(data) {
+      return data.keys().hasAll([
+          'referenceId', 'ownerUid', 'fullName', 'organization', 'email',
+          'sector', 'mode', 'selectedPlan', 'emailStatus', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'referenceId', 'ownerUid', 'fullName', 'organization', 'email',
+          'sector', 'mode', 'selectedPlan', 'emailStatus', 'createdAt'
+        ])
+        && data.referenceId is string && isValidId(data.referenceId) && data.referenceId.size() >= 4 && data.referenceId.size() <= 40
+        && data.ownerUid is string && data.ownerUid == request.auth.uid && isValidId(data.ownerUid)
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 120
+        && data.organization is string && data.organization.size() >= 2 && data.organization.size() <= 160
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.sector is string && data.sector.size() >= 2 && data.sector.size() <= 80
+        && data.mode is string && data.mode in ['demo', 'assessment']
+        && data.selectedPlan is string && data.selectedPlan.size() >= 2 && data.selectedPlan.size() <= 60
+        && data.emailStatus is string && data.emailStatus in ['sent', 'not_configured', 'failed']
+        && data.createdAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /test/{docId} {
+      allow get: if isSignedIn();
+    }
+
+    match /admins/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow create: if isBootstrappedAdminEmail()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidAdminGrant(incoming())
+        && incoming().grantedAt == request.time;
+      allow update, delete, list: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().role == 'analyst'
+        && incoming().createdAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && (isAdmin() || isOwner(userId))
+        && incoming().uid == existing().uid
+        && incoming().role == existing().role
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email']);
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    match /scans/{scanId} {
+      allow get: if isSignedIn() && isValidId(scanId) && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && existing().ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(scanId)
+        && isValidScan(incoming())
+        && incoming().id == scanId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(scanId)
+        && isValidScan(incoming())
+        && (existing().ownerUid == request.auth.uid || isAdmin())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'remediationApplied', 'readinessScore', 'riskIndex', 'status', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedUser() && isValidId(scanId) && (existing().ownerUid == request.auth.uid || isAdmin());
+    }
+
+    match /copilot_sessions/{sessionId} {
+      allow get: if isSignedIn() && isValidId(sessionId) && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && existing().ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(sessionId)
+        && isValidCopilotBrief(incoming())
+        && incoming().id == sessionId
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(sessionId) && (existing().ownerUid == request.auth.uid || isAdmin());
+    }
+
+    match /mitigation_profiles/{profileId} {
+      allow get: if isSignedIn() && isValidId(profileId) && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && existing().ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(profileId)
+        && isValidMitigationProfile(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(profileId)
+        && isValidMitigationProfile(incoming())
+        && (existing().ownerUid == request.auth.uid || isAdmin())
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().sectorId == existing().sectorId
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['appliedIndices', 'updatedAt']);
+      allow delete: if isVerifiedUser() && isValidId(profileId) && (existing().ownerUid == request.auth.uid || isAdmin());
+    }
+
+    match /assessment_requests/{requestId} {
+      allow get: if isSignedIn() && isValidId(requestId) && (existing().ownerUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && existing().ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(requestId)
+        && isValidAssessmentRequest(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin() && isValidId(requestId);
+    }
+  }
+}
